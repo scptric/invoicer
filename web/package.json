@@ -1,0 +1,33 @@
+{
+  "name": "invoicer-web",
+  "version": "0.0.7",
+  "license": "Apache-2.0",
+  "author": "Scptric",
+  "homepage": "https://github.com/scptric/invoicer",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/scptric/invoicer.git"
+  },
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "lucide-react": "^1.78.0",
+    "motion": "^14.14.0",
+    "next": "^16.4.6",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.5",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "tailwindcss": "^4.3.5",
+    "typescript": "^5.8.0"
+  }
+}
