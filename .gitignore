@@ -1,0 +1,28 @@
+# Compiled binaries
+bin/
+*.exe
+
+# Generated exports and audit logs
+output/*.csv
+output/*.json
+
+# Local symbol overrides (keep config/symbols.json tracked)
+/symbols.json
+
+# Design spec (kept local only)
+docs/DESIGN.md
+
+# Environment variables & secrets
+.env
+.env.*
+!.env.example
+
+# OS / editor clutter
+.DS_Store
+Thumbs.db
+
+# Next.js Web UI
+web/node_modules/
+web/.next/
+web/out/
+web/*.tsbuildinfo
