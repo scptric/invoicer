@@ -1,0 +1,128 @@
+name: Release & Packages
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version (e.g. 0.0.7)"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  release-binaries:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      tag: ${{ steps.meta.outputs.tag }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Resolve release version and tag
+        id: meta
+        shell: bash
+        run: |
+          RAW="${{ github.event.inputs.version || github.ref_name }}"
+          VERSION="${RAW#v}"
+          if [[ -z "${VERSION}" || "${VERSION}" == "main" ]]; then
+            echo "Provide a semver tag (e.g. v0.0.7) or workflow_dispatch version input." >&2
+            exit 1
+          fi
+          echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
+          echo "tag=v${VERSION}" >> "${GITHUB_OUTPUT}"
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Run Go test suite
+        run: go test -count=1 ./...
+
+      - name: Build multi-platform CLI archives
+        shell: bash
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          mkdir -p dist
+          targets=(
+            "linux amd64"
+            "linux arm64"
+            "darwin amd64"
+            "darwin arm64"
+            "windows amd64"
+          )
+          for target in "${targets[@]}"; do
+            read -r os arch <<< "${target}"
+            bin_name="invoicer"
+            [[ "${os}" == "windows" ]] && bin_name="invoicer.exe"
+
+            stage_dir="dist/stage_${os}_${arch}"
+            mkdir -p "${stage_dir}/config"
+            CGO_ENABLED=0 GOOS="${os}" GOARCH="${arch}" go build -trimpath \
+              -ldflags="-s -w -X main.version=${VERSION}" \
+              -o "${stage_dir}/${bin_name}" ./cmd/invoicer
+
+            cp LICENSE README.md "${stage_dir}/"
+            cp config/symbols.json "${stage_dir}/config/"
+
+            archive_base="invoicer_${VERSION}_${os}_${arch}"
+            if [[ "${os}" == "windows" ]]; then
+              (cd "${stage_dir}" && zip -r "../${archive_base}.zip" .)
+            else
+              tar -C "${stage_dir}" -czf "dist/${archive_base}.tar.gz" .
+            fi
+            rm -rf "${stage_dir}"
+          done
+          (cd dist && sha256sum invoicer_* > checksums.txt)
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.meta.outputs.tag }}
+          name: "invoicer ${{ steps.meta.outputs.tag }}"
+          files: dist/*
+          generate_release_notes: true
+
+  publish-package:
+    needs: release-binaries
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=raw,value=${{ needs.release-binaries.outputs.version }}
+            type=raw,value=v${{ needs.release-binaries.outputs.version }}
+            type=raw,value=latest
+
+      - name: Build and push container image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: VERSION=${{ needs.release-binaries.outputs.version }}
