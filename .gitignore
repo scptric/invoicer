@@ -9,8 +9,9 @@ output/*.json
 # Local symbol overrides (keep config/symbols.json tracked)
 /symbols.json
 
-# Design spec (kept local only)
+# Design spec & local media studio (kept local only)
 docs/DESIGN.md
+studio/
 
 # Environment variables & secrets
 .env

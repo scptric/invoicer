@@ -13,4 +13,4 @@ Initial open-source release by **Scptric** under the Apache License 2.0.
 - **Math Reconciliation & Cent Allocation**: Exact integer-cent fee allocation across partial fills and automated check verification (`Total Value ± Total Fees = Grand Total`).
 - **CLI Version Flag**: Added `--version` (`invoicer v0.0.7`) injected at build time via `-ldflags`.
 - **Next.js App Router Workbench (`web/`)**: Upload UI, reconciliation strip, execution/invoice row switcher, interactive CSV Viewer (Side filter, Broker filter, search), RFC 4180 CSV preview, and portable `src/features/invoicer/` integration module.
-- **Releases & Packages Automation**: Added multi-stage `Dockerfile` and `.github/workflows/release.yml` to publish multi-platform binaries to GitHub Releases and container images to GitHub Packages (`ghcr.io/scptric/invoicer`).
+- **GitHub Releases Automation**: Added `.github/workflows/release.yml` to build and publish multi-platform CLI binaries to GitHub Releases.
